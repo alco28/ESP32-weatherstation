@@ -1,5 +1,4 @@
 #  ⬇ Config your entity names here:  ⬇ # 
-
 substitutions:
   device_description: Weerstation zelfbouw op ESP32 platform.
   friendly_name:  Weerstation33
@@ -9,6 +8,17 @@ substitutions:
   sampling_period: 5s
   samples: '5'
   decimals: '2'
+
+ # I2C configuration (ESP32 has 2)
+ i2c:
+   - id: i2c_bus_a
+     sda: 13
+     scl: 16
+     scan: true
+  #  - id: i2c_bus_b
+  #    sda: 14
+  #    scl: 15
+  #    scan: true
 
 esphome:
   name: $devicename
@@ -43,7 +53,14 @@ wifi:
   #powersaving options:
   fast_connect: true
   power_save_mode: HIGH #LIGHT = default for ESP32
-  
+
+
+  manual_ip:
+    static_ip: 192.168.1.171
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+    dns1: 192.168.1.1
+    dns2: 192.168.1.139
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -107,6 +124,7 @@ web_server:
 #   active: true
 
 
+#CC:D7:9A:08:DA:40","name":"Forerunner 35 - Hannet"
 
 #--------------------------- sensors --------------------------#
 sensor:
@@ -123,7 +141,7 @@ sensor:
       - calibrate_linear:
           # Map 0.0 (from sensor) to 0.0 (true value)
           - 1.9 -> 3.2
-          - 2.5 -> 4.2      
+          - 2.5 -> 4.15      
     #use moving median to smooth spikes
       - median:
           window_size: 10
@@ -152,7 +170,7 @@ sensor:
           - 3.2 -> 0
           - 3.5 -> 50
           - 3.9 -> 90
-          - 4.2 -> 100
+          - 4.15 -> 100
 
       #Handle/cap boundaries
       - lambda: |
@@ -211,7 +229,22 @@ sensor:
         else return (x);
 
 
-# Will only pick up a value if this device is configured in Home Assistant > Integrations
+# BHT1750 Lux sensors  https://randomnerdtutorials.com/esp32-bh1750-ambient-light-sensor/
+
+sensor:
+  - platform: bh1750
+    name: "outdoor Illuminance"
+    i2c_id: i2c_bus_a
+    address: 0x23
+    update_interval: ${sampling_period}
+    state_class: measurement
+    device_class: illuminance
+    accuracy_decimals: ${decimals}
+
+
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------#   
+
+# Will only pick up  values if this device is configured in Home Assistant > Integrations
 # If the device isn't configured, or Home Assistant is offline, it'll default to false
 binary_sensor:
   - platform: homeassistant
